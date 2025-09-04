@@ -26,8 +26,29 @@
 </style>
 </head>
 <body>
+  <input type="text" id="search" placeholder="Buscar escola, comunidade, nível..." style="position:absolute;z-index:1000;top:10px;left:10px;width:300px;">
+  <button id="toggleFilters" style="position:absolute;z-index:1001;top:10px;left:320px;">Filtros</button>
+  <div id="filters" style="position:absolute;z-index:1000;top:50px;left:10px;background:#fff;padding:10px;display:none;">
+    <strong>Nível:</strong><br>
+    <label><input type="checkbox" class="nivel" value="Ensino Fundamental (anos finais)"> Ensino Fundamental (anos finais)</label><br>
+    <label><input type="checkbox" class="nivel" value="Ensino Médio"> Ensino Médio</label><br>
+    <label><input type="checkbox" class="nivel" value="Educação infantil"> Educação infantil</label><br>
+    <hr>
+    <strong>Extensão?</strong><br>
+    <label><input type="checkbox" class="extensao" value="Sim"> Sim</label>
+    <label><input type="checkbox" class="extensao" value="Não"> Não</label>
+    <hr>
+    <strong>Abrangência:</strong><br>
+    <label><input type="checkbox" class="abrangencia" value="Estadual"> Estadual</label>
+    <label><input type="checkbox" class="abrangencia" value="Municipal"> Municipal</label>
+    <hr>
+    <strong>Turnos da escola:</strong><br>
+    <label><input type="checkbox" class="turno" value="Matutino"> Matutino</label>
+    <label><input type="checkbox" class="turno" value="Vespertino"> Vespertino</label>
+    <label><input type="checkbox" class="turno" value="Integral"> Integral</label>
+    <label><input type="checkbox" class="turno" value="Noturno"> Noturno</label>
+  </div>
   <div id="map"></div>
-
   <script src="script.js"></script>
 </body>
 </html>

@@ -34,7 +34,6 @@ function parseAndFixCsv(csvText) {
       "Tempo médio de deslocamento dos estudantes",
     "Se possível, insira aqui o link com o localizador da escola, ou as coordenadas de latitude e longitude da escola":
       "Localização",
-    // Add more mappings as needed
   };
 
   // Build new headers
@@ -159,6 +158,9 @@ function getCheckedValues(className) {
 
 function applyFilters() {
   const query = document.getElementById("search").value.toLowerCase();
+  const comunidadeQuery = document
+    .getElementById("searchComunidade")
+    .value.toLowerCase();
   const checkedNiveis = getCheckedValues("nivel");
   const checkedExtensao = getCheckedValues("extensao");
   const checkedAbrangencia = getCheckedValues("abrangencia");
@@ -171,6 +173,11 @@ function applyFilters() {
     )
       .toLowerCase()
       .includes(query);
+
+    // Search comunidade
+    const matchesComunidade =
+      comunidadeQuery === "" ||
+      (item.Comunidade || "").toLowerCase().includes(comunidadeQuery);
 
     // Nível filter
     const matchesNivel =
@@ -196,6 +203,7 @@ function applyFilters() {
 
     return (
       matchesText &&
+      matchesComunidade &&
       matchesNivel &&
       matchesExtensao &&
       matchesAbrangencia &&
@@ -205,6 +213,11 @@ function applyFilters() {
 
   addMarkers(filtered);
 }
+
+// Listen to comunidade search input
+document
+  .getElementById("searchComunidade")
+  .addEventListener("input", applyFilters);
 
 // Update all filters and search to use applyFilters
 document.getElementById("search").addEventListener("input", applyFilters);

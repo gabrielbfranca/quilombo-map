@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <input type="text" id="search" placeholder="Buscar escola, comunidade, nível..." style="position:absolute;z-index:1000;top:10px;left:10px;width:300px;">
+  <input type="text" id="search" placeholder="Buscar escola" style="position:absolute;z-index:1000;top:10px;left:10px;width:300px;">
   <button id="toggleFilters" style="
   position:absolute;
   z-index:1001;
@@ -47,6 +47,8 @@
   display:none;
 ">
   <h3 style="margin-top:0;font-size:1.1em;color:#444;">Filtrar escolas</h3>
+  <strong>Buscar comunidade:</strong><br>
+  <input type="text" id="searchComunidade" placeholder="Digite a comunidade..." style="width:95%;margin-bottom:10px;"><br>
   <strong>Nível:</strong><br>
   <label><input type="checkbox" class="nivel" value="Ensino Fundamental (anos finais)"> Ensino Fundamental (anos finais)</label><br>
   <label><input type="checkbox" class="nivel" value="Ensino Médio"> Ensino Médio</label><br>

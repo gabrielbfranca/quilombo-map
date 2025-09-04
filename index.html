@@ -48,7 +48,9 @@
 ">
   <h3 style="margin-top:0;font-size:1.1em;color:#444;">Filtrar escolas</h3>
   <strong>Buscar comunidade:</strong><br>
-  <input type="text" id="searchComunidade" placeholder="Digite a comunidade..." style="width:95%;margin-bottom:10px;"><br>
+  <!-- Replace the datalist with a custom suggestion box -->
+  <input type="text" id="searchComunidade" placeholder="Digite a comunidade..." autocomplete="off" style="width:95%;margin-bottom:10px;">
+  <div id="comunidade-suggestions" style="background:#fff;border:1px solid #ccc;max-height:120px;overflow-y:auto;position:absolute;display:none;z-index:1002;width:95%;"></div>
   <strong>Nível:</strong><br>
   <label><input type="checkbox" class="nivel" value="Ensino Fundamental (anos finais)"> Ensino Fundamental (anos finais)</label><br>
   <label><input type="checkbox" class="nivel" value="Ensino Médio"> Ensino Médio</label><br>

@@ -133,16 +133,67 @@ function addMarkers(data) {
 }
 
 // Load CSV file and parse it
+let comunidadesList = [];
+
 fetch("Escola Quilombo.csv")
   .then((response) => response.text())
   .then((csvText) => {
     const parsed = Papa.parse(csvText, { header: true });
     allData = parsed.data;
     addMarkers(allData);
+
+    // Custom autocomplete for comunidade
+    comunidadesList = [
+      ...new Set(allData.map((item) => item.Comunidade).filter(Boolean)),
+    ];
   })
   .catch((error) => {
     console.error("Erro ao carregar CSV:", error);
   });
+
+// Custom autocomplete logic
+const comunidadeInput = document.getElementById("searchComunidade");
+const suggestionsBox = document.getElementById("comunidade-suggestions");
+
+comunidadeInput.addEventListener("input", function () {
+  const value = this.value.toLowerCase();
+  if (!value) {
+    suggestionsBox.style.display = "none";
+    return;
+  }
+  const matches = comunidadesList.filter((com) =>
+    com.toLowerCase().includes(value)
+  );
+  if (matches.length === 0) {
+    suggestionsBox.style.display = "none";
+    return;
+  }
+  suggestionsBox.innerHTML = matches
+    .map(
+      (com) =>
+        `<div class="suggestion-item" style="padding:6px;cursor:pointer;">${com}</div>`
+    )
+    .join("");
+  suggestionsBox.style.display = "block";
+  suggestionsBox.style.top =
+    comunidadeInput.offsetTop + comunidadeInput.offsetHeight + "px";
+  suggestionsBox.style.left = comunidadeInput.offsetLeft + "px";
+});
+
+suggestionsBox.addEventListener("mousedown", function (e) {
+  if (e.target.classList.contains("suggestion-item")) {
+    comunidadeInput.value = e.target.textContent;
+    suggestionsBox.style.display = "none";
+    applyFilters();
+  }
+});
+
+// Hide suggestions when clicking outside
+document.addEventListener("click", function (e) {
+  if (e.target !== comunidadeInput && e.target !== suggestionsBox) {
+    suggestionsBox.style.display = "none";
+  }
+});
 
 document.getElementById("toggleFilters").addEventListener("click", function () {
   const filtersDiv = document.getElementById("filters");

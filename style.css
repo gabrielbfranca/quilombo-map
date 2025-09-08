@@ -3,10 +3,14 @@ body {
   height: 100%;
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
 }
 #map {
-  height: 100vh;
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100vw;
+  height: 100vh;
 }
 #toggleFilters {
   position: absolute;
@@ -21,6 +25,7 @@ body {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   font-weight: bold;
   color: #333;
+  max-width: 95vw;
 }
 #filters {
   position: absolute;
@@ -32,8 +37,10 @@ body {
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   padding: 18px 16px 12px 16px;
-  min-width: 260px;
+  min-width: 220px;
+  max-width: 95vw;
   display: none;
+  box-sizing: border-box;
 }
 #filters h3 {
   margin-top: 0;
@@ -46,4 +53,31 @@ body {
 }
 #filters hr {
   margin: 10px 0;
+}
+
+@media (max-width: 600px) {
+  #search {
+    width: 90vw !important;
+    left: 5vw !important;
+    top: 10px !important;
+  }
+  #toggleFilters {
+    left: 5vw !important;
+    top: 60px !important;
+    width: 90vw !important;
+    font-size: 1em;
+    padding: 10px 0;
+  }
+  #filters {
+    left: 5vw !important;
+    top: 110px !important;
+    width: 90vw !important;
+    min-width: unset;
+    padding: 12px 8px 8px 8px;
+    font-size: 1em;
+  }
+  #comunidade-suggestions {
+    width: 90vw !important;
+    left: 0 !important;
+  }
 }

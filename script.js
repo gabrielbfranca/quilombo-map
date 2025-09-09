@@ -1,5 +1,10 @@
 // Initialize the map
-var map = L.map("map").setView([-15.78, -47.93], 5);
+var map = L.map("map", {
+  zoomControl: false, // disable default position
+}).setView([-15.78, -47.93], 5);
+
+L.control.zoom({ position: "bottomright" }).addTo(map);
+
 const CSV =
   // Add base map tiles
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {

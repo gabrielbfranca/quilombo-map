@@ -317,6 +317,15 @@ function applyFilters() {
   });
 
   addMarkers(filtered);
+
+  // Fit map view to show all filtered markers
+  if (allMarkers.length > 0) {
+    const group = new L.featureGroup(allMarkers);
+    map.fitBounds(group.getBounds(), { padding: [20, 20] });
+  } else {
+    // If no markers, reset to default view
+    map.setView([-15.78, -47.93], 5);
+  }
 }
 
 // Remove these event listeners for real-time search:

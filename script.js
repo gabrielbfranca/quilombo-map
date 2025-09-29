@@ -200,10 +200,17 @@ document.addEventListener("click", function (e) {
   }
 });
 
-document.getElementById("toggleFilters").addEventListener("click", function () {
-  const filtersDiv = document.getElementById("filters");
-  filtersDiv.style.display =
-    filtersDiv.style.display === "none" ? "block" : "none";
+document.getElementById("filterHeader").addEventListener("click", function () {
+  const filterContent = document.getElementById("filterContent");
+  const minimizeBtn = document.getElementById("minimizeBtn");
+
+  if (filterContent.style.display === "none") {
+    filterContent.style.display = "block";
+    minimizeBtn.textContent = "−";
+  } else {
+    filterContent.style.display = "none";
+    minimizeBtn.textContent = "+";
+  }
 });
 
 function getCheckedValues(className) {

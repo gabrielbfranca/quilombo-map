@@ -189,7 +189,7 @@ suggestionsBox.addEventListener("mousedown", function (e) {
   if (e.target.classList.contains("suggestion-item")) {
     comunidadeInput.value = e.target.textContent;
     suggestionsBox.style.display = "none";
-    applyFilters();
+    // Remove this line: applyFilters();
   }
 });
 
@@ -277,15 +277,22 @@ function applyFilters() {
   addMarkers(filtered);
 }
 
-// Listen to comunidade search input
-document
-  .getElementById("searchComunidade")
-  .addEventListener("input", applyFilters);
+// Remove these event listeners for real-time search:
+// document.getElementById("searchComunidade").addEventListener("input", applyFilters);
+// document.getElementById("search").addEventListener("input", applyFilters);
+// ["nivel", "extensao", "abrangencia", "turno"].forEach((className) => {
+//   document.querySelectorAll("input." + className).forEach((cb) => cb.addEventListener("change", applyFilters));
+// });
 
-// Update all filters and search to use applyFilters
-document.getElementById("search").addEventListener("input", applyFilters);
-["nivel", "extensao", "abrangencia", "turno"].forEach((className) => {
+// Replace with button click event:
+document.getElementById("applyFilters").addEventListener("click", applyFilters);
+
+// Add clear functionality
+document.getElementById("clearFilters").addEventListener("click", function () {
+  document.getElementById("search").value = "";
+  document.getElementById("searchComunidade").value = "";
   document
-    .querySelectorAll("input." + className)
-    .forEach((cb) => cb.addEventListener("change", applyFilters));
+    .querySelectorAll("input[type='checkbox']")
+    .forEach((cb) => (cb.checked = false));
+  addMarkers(allData); // Show all markers
 });

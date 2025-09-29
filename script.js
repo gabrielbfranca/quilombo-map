@@ -171,6 +171,7 @@ function addMarkers(data) {
 
 // Load CSV file and parse it
 let comunidadesList = [];
+let escolasList = []; // Add this line
 
 fetch("Escola Quilombo.csv")
   .then((response) => response.text())
@@ -182,6 +183,15 @@ fetch("Escola Quilombo.csv")
     // Custom autocomplete for comunidade
     comunidadesList = [
       ...new Set(allData.map((item) => item.Comunidade).filter(Boolean)),
+    ];
+
+    // Custom autocomplete for escola - Add this block
+    escolasList = [
+      ...new Set(
+        allData
+          .map((item) => item["Nome da escola (ou extensão se for o caso)"])
+          .filter(Boolean)
+      ),
     ];
   })
   .catch((error) => {
@@ -327,4 +337,47 @@ document.getElementById("clearFilters").addEventListener("click", function () {
     .querySelectorAll("input[type='checkbox']")
     .forEach((cb) => (cb.checked = false));
   addMarkers(allData); // Show all markers
+});
+
+// Add school autocomplete logic
+const escolaInput = document.getElementById("search");
+const escolaSuggestionsBox = document.getElementById("escola-suggestions");
+
+escolaInput.addEventListener("input", function () {
+  const value = this.value.toLowerCase();
+  if (!value) {
+    escolaSuggestionsBox.style.display = "none";
+    return;
+  }
+  const matches = escolasList.filter((escola) =>
+    escola.toLowerCase().includes(value)
+  );
+  if (matches.length === 0) {
+    escolaSuggestionsBox.style.display = "none";
+    return;
+  }
+  escolaSuggestionsBox.innerHTML = matches
+    .map(
+      (escola) =>
+        `<div class="suggestion-item" style="padding:6px;cursor:pointer;">${escola}</div>`
+    )
+    .join("");
+  escolaSuggestionsBox.style.display = "block";
+  escolaSuggestionsBox.style.top =
+    escolaInput.offsetTop + escolaInput.offsetHeight + "px";
+  escolaSuggestionsBox.style.left = escolaInput.offsetLeft + "px";
+});
+
+escolaSuggestionsBox.addEventListener("mousedown", function (e) {
+  if (e.target.classList.contains("suggestion-item")) {
+    escolaInput.value = e.target.textContent;
+    escolaSuggestionsBox.style.display = "none";
+  }
+});
+
+// Hide escola suggestions when clicking outside
+document.addEventListener("click", function (e) {
+  if (e.target !== escolaInput && e.target !== escolaSuggestionsBox) {
+    escolaSuggestionsBox.style.display = "none";
+  }
 });

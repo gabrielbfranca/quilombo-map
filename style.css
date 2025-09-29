@@ -55,6 +55,43 @@ body {
   margin: 10px 0;
 }
 
+/* Remove default popup padding */
+.leaflet-popup-content {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.leaflet-popup-content-wrapper {
+  padding: 0 !important;
+  border-radius: 8px !important;
+}
+
+.custom-popup .leaflet-popup-content {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Style the default Leaflet close button */
+.leaflet-popup-close-button {
+  background: rgba(0, 0, 0, 0.7) !important;
+  color: white !important;
+  border-radius: 50% !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 16px !important;
+  font-weight: bold !important;
+  text-decoration: none !important;
+  top: 8px !important;
+  right: 8px !important;
+}
+
+.leaflet-popup-close-button:hover {
+  background: rgba(0, 0, 0, 0.9) !important;
+}
+
 @media (max-width: 600px) {
   #search {
     width: 90vw !important;

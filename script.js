@@ -79,58 +79,90 @@ function addMarkers(data) {
         .split(",")
         .map((v) => Number(v.trim()));
       if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
-        let popupContent = `<b>${
-          item["Nome da escola (ou extensão se for o caso)"] || "Escola"
-        }</b><br>`;
-        popupContent += `<b>Comunidade:</b> ${item.Comunidade || ""}<br>`;
-        popupContent += `<b>Abrangência:</b> ${item.Abrangência || ""}<br>`;
-        popupContent += `<b>Nível:</b> ${item.Nível || ""}<br>`;
-        popupContent += `<b>Quantidade de estudantes:</b> ${
-          item["Quantidade de estudantes"] || ""
-        }<br>`;
-        popupContent += `<b>Quantidade de professores efetivos:</b> ${
-          item["Quantidade de professores efetivos"] || ""
-        }<br>`;
-        popupContent += `<b>Quantidade de professores temporários:</b> ${
-          item["Quantidade de professores temporários"] || ""
-        }<br>`;
-        popupContent += `<b>Professores formados pela LEdoC:</b> ${
-          item["Professores formados pela LEdoC trabalhando na escola"] || ""
-        }<br>`;
-        popupContent += `<b>Melhor forma de chegar:</b> ${
-          item["Qual a melhor forma de chegar até a escola?"] || ""
-        }<br>`;
-        popupContent += `<b>Distância até a sede:</b> ${
-          item["Distância até a sede "] || ""
-        }<br>`;
-        popupContent += `<b>Turnos em que a escola funciona:</b> ${
-          item["Turnos em que a escola funciona"] || ""
-        }<br>`;
-        popupContent += `<b>Distância até a CRE:</b> ${
-          item["Distância até a CRE"] || ""
-        }<br>`;
-        popupContent += `<b>Tempo de deslocamento da escola até a CRE:</b> ${
-          item["Tempo de deslocamento da escola até a CRE"] || ""
-        }<br>`;
-        popupContent += `<b>Quantidade de estudantes transportados:</b> ${
-          item[
-            "Quantidade de estudantes transportados pelo transporte da escola"
-          ] || ""
-        }<br>`;
-        popupContent += `<b>Tempo médio de deslocamento dos estudantes:</b> ${
-          item["Tempo médio de deslocamento dos estudantes"] || ""
-        }<br>`;
-        popupContent += `<b>Localização:</b> ${
-          item[
-            "Se possível, insira aqui o link com o localizador da escola, ou as coordenadas de latitude e longitude da escola"
-          ] || ""
-        }<br>`;
-        popupContent += `<b>Comentários:</b> ${
-          item["Se tiver sugestoes ou comentários, escreva aqui"] || ""
-        }<br>`;
+        // Build styled popup content
+        let popupContent = `
+          <div style="font-family: Arial, sans-serif; max-width: 300px;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
+              <h3 style="margin: 0; font-size: 1.2em; font-weight: bold; flex: 1;">
+                🏫 ${
+                  item["Nome da escola (ou extensão se for o caso)"] || "Escola"
+                }
+              </h3>
+              
+            </div>
+            
+            <div style="padding: 12px;">
+              <div style="margin-bottom: 8px; padding: 8px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #007cba;">
+                <strong style="color: #495057;">📍 Comunidade:</strong><br>
+                <span style="color: #6c757d;">${
+                  item.Comunidade || "Não informado"
+                }</span>
+              </div>
+              
+              <div style="margin-bottom: 8px; padding: 8px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #28a745;">
+                <strong style="color: #495057;">🏛️ Abrangência:</strong> <span style="color: #6c757d;">${
+                  item.Abrangência || "Não informado"
+                }</span><br>
+                <strong style="color: #495057;">📚 Nível:</strong> <span style="color: #6c757d;">${
+                  item.Nível || "Não informado"
+                }</span>
+              </div>
+              
+              <div style="margin-bottom: 8px; padding: 8px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #ffc107;">
+                <strong style="color: #495057;">👥 Estudantes:</strong> <span style="color: #6c757d;">${
+                  item["Quantidade de estudantes"] || "Não informado"
+                }</span><br>
+                <strong style="color: #495057;">👨‍🏫 Professores:</strong> <span style="color: #6c757d;">${
+                  item["Quantidade de professores efetivos"] || "0"
+                } efetivos, ${
+          item["Quantidade de professores temporários"] || "0"
+        } temporários</span>
+              </div>
+              
+              <div style="margin-bottom: 8px; padding: 8px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #17a2b8;">
+                <strong style="color: #495057;">⏰ Turnos:</strong><br>
+                <span style="color: #6c757d;">${
+                  item["Turnos em que a escola funciona"] || "Não informado"
+                }</span>
+              </div>
+              
+              <div style="margin-bottom: 8px; padding: 8px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #dc3545;">
+                <strong style="color: #495057;">🚗 Acesso:</strong><br>
+                <span style="color: #6c757d;">${
+                  item["Qual a melhor forma de chegar até a escola?"] ||
+                  "Não informado"
+                }</span>
+              </div>
+              
+              ${
+                item["Professores formados pela LEdoC trabalhando na escola"]
+                  ? `
+                <div style="margin-bottom: 8px; padding: 8px; background: #e8f5e8; border-radius: 6px; border-left: 4px solid #28a745;">
+                  <strong style="color: #155724;">🎓 Professores LEdoC:</strong> <span style="color: #155724;">${item["Professores formados pela LEdoC trabalhando na escola"]}</span>
+                </div>
+              `
+                  : ""
+              }
+              
+              ${
+                item["Se tiver sugestoes ou comentários, escreva aqui"]
+                  ? `
+                <div style="margin-top: 12px; padding: 8px; background: #fff3cd; border-radius: 6px; border-left: 4px solid #ffc107;">
+                  <strong style="color: #856404;">💬 Comentários:</strong><br>
+                  <em style="color: #856404;">"${item["Se tiver sugestoes ou comentários, escreva aqui"]}"</em>
+                </div>
+              `
+                  : ""
+              }
+            </div>
+          </div>
+        `;
 
         const marker = L.marker(coords).addTo(map);
-        marker.bindPopup(popupContent);
+        marker.bindPopup(popupContent, {
+          maxWidth: 350,
+          className: "custom-popup",
+        });
         allMarkers.push(marker);
       }
     }

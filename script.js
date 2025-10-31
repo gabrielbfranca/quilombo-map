@@ -261,6 +261,14 @@ function getCheckedValues(className) {
   ).map((cb) => cb.value);
 }
 
+function showCustomAlert() {
+  document.getElementById("customAlert").style.display = "flex";
+}
+
+document.getElementById("closeAlertBtn").onclick = function () {
+  document.getElementById("customAlert").style.display = "none";
+};
+
 function applyFilters() {
   const query = document.getElementById("search").value.toLowerCase();
   const comunidadeQuery = document
@@ -323,8 +331,9 @@ function applyFilters() {
     const group = new L.featureGroup(allMarkers);
     map.fitBounds(group.getBounds(), { padding: [20, 20] });
   } else {
-    // If no markers, reset to default view
+    // If no markers, reset to default view and show alert
     map.setView([-15.78, -47.93], 5);
+    showCustomAlert();
   }
 }
 

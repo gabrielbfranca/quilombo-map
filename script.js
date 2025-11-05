@@ -270,68 +270,63 @@ document.getElementById("closeAlertBtn").onclick = function () {
 };
 
 function applyFilters() {
-  const query = document.getElementById("search").value.toLowerCase();
-  const comunidadeQuery = document
-    .getElementById("searchComunidade")
-    .value.toLowerCase();
-  const checkedNiveis = getCheckedValues("nivel");
-  const checkedExtensao = getCheckedValues("extensao");
-  const checkedAbrangencia = getCheckedValues("abrangencia");
-  const checkedTurnos = getCheckedValues("turno");
+  // If "Mostrar todas as escolas" is checked, show everything
+  const showAll =
+    document.getElementById("showAll") &&
+    document.getElementById("showAll").checked;
+  let filtered;
 
-  let filtered = allData.filter((item) => {
-    // Search only school name
-    const matchesText = (
-      item["Nome da escola (ou extensão se for o caso)"] || ""
-    )
-      .toLowerCase()
-      .includes(query);
+  if (showAll) {
+    filtered = allData.slice();
+  } else {
+    const query = document.getElementById("search").value.toLowerCase();
+    const comunidadeQuery = document
+      .getElementById("searchComunidade")
+      .value.toLowerCase();
+    const checkedNiveis = getCheckedValues("nivel");
+    const checkedExtensao = getCheckedValues("extensao");
+    const checkedAbrangencia = getCheckedValues("abrangencia");
+    const checkedTurnos = getCheckedValues("turno");
 
-    // Search comunidade
-    const matchesComunidade =
-      comunidadeQuery === "" ||
-      (item.Comunidade || "").toLowerCase().includes(comunidadeQuery);
-
-    // Nível filter
-    const matchesNivel =
-      checkedNiveis.length === 0 ||
-      checkedNiveis.some((nivel) => (item.Nível || "").includes(nivel));
-
-    // Extensão filter
-    const matchesExtensao =
-      checkedExtensao.length === 0 ||
-      checkedExtensao.includes(item["A escola é extensão?"]);
-
-    // Abrangência filter
-    const matchesAbrangencia =
-      checkedAbrangencia.length === 0 ||
-      checkedAbrangencia.includes(item.Abrangência);
-
-    // Turnos filter
-    const matchesTurnos =
-      checkedTurnos.length === 0 ||
-      checkedTurnos.some((turno) =>
-        (item["Turnos em que a escola funciona"] || "").includes(turno)
+    filtered = allData.filter((item) => {
+      const matchesText =
+        (item["Nome da escola (ou extensão se for o caso)"] || "")
+          .toLowerCase()
+          .includes(query);
+      const matchesComunidade =
+        comunidadeQuery === "" ||
+        (item.Comunidade || "").toLowerCase().includes(comunidadeQuery);
+      const matchesNivel =
+        checkedNiveis.length === 0 ||
+        checkedNiveis.some((nivel) => (item.Nível || "").includes(nivel));
+      const matchesExtensao =
+        checkedExtensao.length === 0 ||
+        checkedExtensao.includes(item["A escola é extensão?"]);
+      const matchesAbrangencia =
+        checkedAbrangencia.length === 0 ||
+        checkedAbrangencia.includes(item.Abrangência);
+      const matchesTurnos =
+        checkedTurnos.length === 0 ||
+        checkedTurnos.some((turno) =>
+          (item["Turnos em que a escola funciona"] || "").includes(turno)
+        );
+      return (
+        matchesText &&
+        matchesComunidade &&
+        matchesNivel &&
+        matchesExtensao &&
+        matchesAbrangencia &&
+        matchesTurnos
       );
-
-    return (
-      matchesText &&
-      matchesComunidade &&
-      matchesNivel &&
-      matchesExtensao &&
-      matchesAbrangencia &&
-      matchesTurnos
-    );
-  });
+    });
+  }
 
   addMarkers(filtered);
 
-  // Fit map view to show all filtered markers
   if (allMarkers.length > 0) {
     const group = new L.featureGroup(allMarkers);
     map.fitBounds(group.getBounds(), { padding: [20, 20] });
   } else {
-    // If no markers, reset to default view and show alert
     map.setView([-15.78, -47.93], 5);
     showCustomAlert();
   }
@@ -351,9 +346,16 @@ document.getElementById("applyFilters").addEventListener("click", applyFilters);
 document.getElementById("clearFilters").addEventListener("click", function () {
   document.getElementById("search").value = "";
   document.getElementById("searchComunidade").value = "";
+  const showAll = document.getElementById("showAll");
+  if (showAll) {
+    showAll.checked = false;
+  }
   document
-    .querySelectorAll("input[type='checkbox']")
+    .querySelectorAll("#filterContent input[type='checkbox']")
     .forEach((cb) => (cb.checked = false));
+  document.querySelectorAll("#filterContent input[type='checkbox']").forEach((cb) => (cb.disabled = false));
+  document.getElementById("search").disabled = false;
+  document.getElementById("searchComunidade").disabled = false;
   addMarkers(allData); // Show all markers
 });
 
@@ -399,3 +401,20 @@ document.addEventListener("click", function (e) {
     escolaSuggestionsBox.style.display = "none";
   }
 });
+
+// Add this near other DOM listeners (after DOM elements exist)
+const showAllCheckbox = document.getElementById("showAll");
+if (showAllCheckbox) {
+  showAllCheckbox.addEventListener("change", function () {
+    const disabled = this.checked;
+    // disable search inputs and other filter checkboxes when "show all" is checked
+    const schoolInput = document.getElementById("search");
+    const comunidadeInput = document.getElementById("searchComunidade");
+    if (schoolInput) schoolInput.disabled = disabled;
+    if (comunidadeInput) comunidadeInput.disabled = disabled;
+
+    document.querySelectorAll("#filterContent input[type='checkbox']").forEach((cb) => {
+      if (cb.id !== "showAll") cb.disabled = disabled;
+    });
+  });
+}

@@ -323,10 +323,32 @@ function applyFilters() {
 
   addMarkers(filtered);
 
-  if (allMarkers.length > 0) {
+  // Show results list
+  const resultsList = document.getElementById("resultsList");
+  const resultItems = document.getElementById("resultItems");
+  
+  if (filtered.length > 0) {
+    resultsList.style.display = "block";
+    resultItems.innerHTML = filtered
+      .map(
+        (item, index) => `
+          <div class="result-card" style="
+            padding: 12px 16px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+          " onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='transparent'" onclick="showSchoolPopup(${index}, ${JSON.stringify(filtered).replace(/"/g, '&quot;')})">
+            <strong style="color: #333;">🏫 ${item["Nome da escola (ou extensão se for o caso)"] || "Escola"}</strong><br>
+            <small style="color: #666;">${item.Comunidade || "Comunidade desconhecida"}</small>
+          </div>
+        `
+      )
+      .join("");
+    
     const group = new L.featureGroup(allMarkers);
     map.fitBounds(group.getBounds(), { padding: [20, 20] });
   } else {
+    resultsList.style.display = "none";
     map.setView([-15.78, -47.93], 5);
     showCustomAlert();
   }
@@ -356,6 +378,7 @@ document.getElementById("clearFilters").addEventListener("click", function () {
   document.querySelectorAll("#filterContent input[type='checkbox']").forEach((cb) => (cb.disabled = false));
   document.getElementById("search").disabled = false;
   document.getElementById("searchComunidade").disabled = false;
+  document.getElementById("resultsList").style.display = "none";
   addMarkers(allData); // Show all markers
 });
 
@@ -416,5 +439,23 @@ if (showAllCheckbox) {
     document.querySelectorAll("#filterContent input[type='checkbox']").forEach((cb) => {
       if (cb.id !== "showAll") cb.disabled = disabled;
     });
+  });
+}
+
+function showSchoolPopup(index, filteredData) {
+  const item = filteredData[index];
+  
+  // Find and click the corresponding marker
+  const coords = item[
+    "Se possível, insira aqui o link com o localizador da escola, ou as coordenadas de latitude e longitude da escola"
+  ]
+    .split(",")
+    .map((v) => Number(v.trim()));
+  
+  // Find marker and open popup
+  allMarkers.forEach((marker) => {
+    if (marker.getLatLng().lat === coords[0] && marker.getLatLng().lng === coords[1]) {
+      marker.openPopup();
+    }
   });
 }

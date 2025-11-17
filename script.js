@@ -62,12 +62,21 @@ function parseAndFixCsv(csvText) {
 let allMarkers = [];
 let allData = [];
 
+let currentFiltered = [];
+let selectedIndices = new Set();
+let lastClickedIndex = null;
+
+// --- Adicionar variáveis de seleção por retângulo ---
+let isSelecting = false;
+let selectStartPoint = null;
+let selectionRect = null;
+
 function addMarkers(data) {
   // Remove previous markers
   allMarkers.forEach((marker) => map.removeLayer(marker));
   allMarkers = [];
 
-  data.forEach((item) => {
+  data.forEach((item, idx) => {
     if (
       item[
         "Se possível, insira aqui o link com o localizador da escola, ou as coordenadas de latitude e longitude da escola"
@@ -163,6 +172,11 @@ function addMarkers(data) {
           maxWidth: 350,
           className: "custom-popup",
         });
+
+        // <-- NOVO: armazenar referência ao item e índice relativo ao array 'data'
+        marker._item = item;
+        marker._resultIndex = idx;
+
         allMarkers.push(marker);
       }
     }
@@ -321,6 +335,9 @@ function applyFilters() {
     });
   }
 
+  // keep reference to filtered for selection handling
+  currentFiltered = filtered;
+
   addMarkers(filtered);
 
   // Show results list
@@ -329,22 +346,31 @@ function applyFilters() {
   
   if (filtered.length > 0) {
     resultsList.style.display = "block";
+    // render items without inline onclick; use data-index
     resultItems.innerHTML = filtered
       .map(
         (item, index) => `
-          <div class="result-card" style="
+          <div class="result-card" data-index="${index}" style="
             padding: 12px 16px;
             border-bottom: 1px solid #eee;
             cursor: pointer;
-            transition: background 0.2s;
-          " onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='transparent'" onclick="showSchoolPopup(${index}, ${JSON.stringify(filtered).replace(/"/g, '&quot;')})">
-            <strong style="color: #333;">🏫 ${item["Nome da escola (ou extensão se for o caso)"] || "Escola"}</strong><br>
+            transition: background 0.15s;
+            display:flex;
+            flex-direction:column;
+          ">
+            <strong style="color: #333;">🏫 ${item["Nome da escola (ou extensão se for o caso)"] || "Escola"}</strong>
             <small style="color: #666;">${item.Comunidade || "Comunidade desconhecida"}</small>
           </div>
         `
       )
       .join("");
-    
+
+    // clear previous selection state
+    selectedIndices.clear();
+    lastClickedIndex = null;
+    // remove any selected class if present
+    document.querySelectorAll("#resultItems .result-card.selected").forEach(n => n.classList.remove("selected"));
+
     const group = new L.featureGroup(allMarkers);
     map.fitBounds(group.getBounds(), { padding: [20, 20] });
   } else {
@@ -442,20 +468,189 @@ if (showAllCheckbox) {
   });
 }
 
-function showSchoolPopup(index, filteredData) {
-  const item = filteredData[index];
+// add delegated click handler for selecting items and double-click to open popup
+const resultItemsContainer = document.getElementById("resultItems");
+if (resultItemsContainer) {
+  resultItemsContainer.addEventListener("click", function (e) {
+    const card = e.target.closest(".result-card");
+    if (!card) return;
+    const idx = Number(card.dataset.index);
+    // Shift = select range
+    if (e.shiftKey && lastClickedIndex !== null) {
+      const start = Math.min(lastClickedIndex, idx);
+      const end = Math.max(lastClickedIndex, idx);
+      for (let i = start; i <= end; i++) selectedIndices.add(i);
+    } else if (e.ctrlKey || e.metaKey) {
+      // Ctrl/Cmd = toggle single
+      if (selectedIndices.has(idx)) selectedIndices.delete(idx);
+      else selectedIndices.add(idx);
+      lastClickedIndex = idx;
+    } else {
+      // Simple click = single selection
+      selectedIndices.clear();
+      selectedIndices.add(idx);
+      lastClickedIndex = idx;
+    }
+    // update visual states
+    document.querySelectorAll("#resultItems .result-card").forEach(el => {
+      const i = Number(el.dataset.index);
+      if (selectedIndices.has(i)) el.classList.add("selected");
+      else el.classList.remove("selected");
+    });
+  });
+
+  // double click opens popup and centers map on that school
+  resultItemsContainer.addEventListener("dblclick", function (e) {
+    const card = e.target.closest(".result-card");
+    if (!card) return;
+    const idx = Number(card.dataset.index);
+    showSchoolPopup(idx);
+  });
+}
+
+// helper to get selected data objects
+function getSelectedSchools() {
+  return Array.from(selectedIndices)
+    .sort((a,b)=>a-b)
+    .map(i => currentFiltered[i]);
+}
+
+// update showSchoolPopup to use currentFiltered
+function showSchoolPopup(index) {
+  const item = currentFiltered[index];
+  if (!item) return;
   
-  // Find and click the corresponding marker
   const coords = item[
     "Se possível, insira aqui o link com o localizador da escola, ou as coordenadas de latitude e longitude da escola"
   ]
     .split(",")
     .map((v) => Number(v.trim()));
   
-  // Find marker and open popup
-  allMarkers.forEach((marker) => {
-    if (marker.getLatLng().lat === coords[0] && marker.getLatLng().lng === coords[1]) {
+  // find first marker matching coords and open popup, also pan there
+  for (const marker of allMarkers) {
+    const ll = marker.getLatLng();
+    if (Math.abs(ll.lat - coords[0]) < 1e-6 && Math.abs(ll.lng - coords[1]) < 1e-6) {
       marker.openPopup();
+      map.panTo(marker.getLatLng());
+      return;
+    }
+  }
+}
+
+// --- Seleção por arrastar (SHIFT + drag) ---
+map.on("mousedown", function (e) {
+  if (!e.originalEvent.shiftKey) return; // segura Shift para selecionar
+  isSelecting = true;
+  selectStartPoint = e.containerPoint;
+  // cria retângulo temporário
+  selectionRect = L.rectangle([map.containerPointToLatLng(selectStartPoint), map.containerPointToLatLng(selectStartPoint)], {
+    color: "#007cba",
+    weight: 1,
+    fillOpacity: 0.15,
+    interactive: false
+  }).addTo(map);
+  // desabilitar dragging do mapa enquanto seleciona
+  map.dragging.disable();
+});
+
+map.on("mousemove", function (e) {
+  if (!isSelecting || !selectionRect) return;
+  const p1 = selectStartPoint;
+  const p2 = e.containerPoint;
+  const bounds = L.latLngBounds(map.containerPointToLatLng(p1), map.containerPointToLatLng(p2));
+  selectionRect.setBounds(bounds);
+});
+
+map.on("mouseup", function (e) {
+  if (!isSelecting) return;
+  isSelecting = false;
+  map.dragging.enable();
+
+  if (!selectionRect) return;
+  const bounds = selectionRect.getBounds();
+
+  // Encontrar markers dentro dos bounds; usar allMarkers que foram criados para o conjunto atual
+  const matchedItems = [];
+  const matchedIndices = [];
+
+  allMarkers.forEach((marker) => {
+    const ll = marker.getLatLng();
+    if (bounds.contains(ll)) {
+      // se marker._item existir (setado em addMarkers), adiciona ao array
+      if (marker._item) {
+        matchedItems.push(marker._item);
+        // se marker._resultIndex existir use-o, senão use posição em matchedItems
+        matchedIndices.push(typeof marker._resultIndex === "number" ? marker._resultIndex : matchedItems.length - 1);
+      }
     }
   });
+
+  // remover retângulo de seleção
+  map.removeLayer(selectionRect);
+  selectionRect = null;
+
+  if (matchedItems.length > 0) {
+    // mostrar lista lateral com os itens selecionados
+    populateResultsList(matchedItems);
+
+    // marca visualmente os cards correspondentes (seleção única múltipla por padrão)
+    // aqui selecionamos todos (multi-seleção)
+    selectedIndices.clear();
+    for (let i = 0; i < matchedItems.length; i++) selectedIndices.add(i);
+    document.querySelectorAll("#resultItems .result-card").forEach(el => {
+      const i = Number(el.dataset.index);
+      if (selectedIndices.has(i)) el.classList.add("selected");
+      else el.classList.remove("selected");
+    });
+
+    // ajustar mapa para mostrar a área selecionada
+    map.fitBounds(bounds.pad(0.1));
+  } else {
+    // nada selecionado -> ocultar lista e mostrar alerta modal
+    const resultsList = document.getElementById("resultsList");
+    if (resultsList) resultsList.style.display = "none";
+    showCustomAlert(); // usa o modal já existente
+  }
+});
+
+// --- Função que popula a lista lateral (reutilizável) ---
+function populateResultsList(list) {
+  currentFiltered = list.slice();
+  const resultsList = document.getElementById("resultsList");
+  const resultItems = document.getElementById("resultItems");
+  if (!resultsList || !resultItems) return;
+
+  if (list.length === 0) {
+    resultsList.style.display = "none";
+    return;
+  }
+
+  resultsList.style.display = "block";
+  resultItems.innerHTML = list
+    .map(
+      (item, index) => `
+      <div class="result-card" data-index="${index}" style="
+        padding: 12px 16px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        transition: background 0.15s;
+        display:flex;
+        flex-direction:column;
+      ">
+        <strong style="color: #333;">🏫 ${item["Nome da escola (ou extensão se for o caso)"] || "Escola"}</strong>
+        <small style="color: #666;">${item.Comunidade || "Comunidade desconhecida"}</small>
+      </div>
+    `
+    )
+    .join("");
+
+  // reset selection visual state
+  selectedIndices.clear();
+  lastClickedIndex = null;
+  document.querySelectorAll("#resultItems .result-card.selected").forEach(n => n.classList.remove("selected"));
 }
+
+// Expor função de seleção para debug se precisar
+window.getSelectedSchools = function() {
+  return Array.from(selectedIndices).sort((a,b)=>a-b).map(i => currentFiltered[i]);
+};

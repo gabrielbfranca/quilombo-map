@@ -92,6 +92,11 @@ body {
   background: rgba(0, 0, 0, 0.9) !important;
 }
 
+#resultItems .result-card.selected {
+  background: #e6f2ff;
+  border-left: 4px solid #007cba;
+}
+
 @media (max-width: 600px) {
   #search {
     width: 90vw !important;

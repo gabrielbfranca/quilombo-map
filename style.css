@@ -203,3 +203,21 @@ body {
     overflow-wrap: anywhere;
   }
 }
+
+/* resultsList collapsed state */
+#resultsList.collapsed {
+  max-height: 52px;
+  overflow: visible;
+}
+#resultsList.collapsed #resultItems {
+  display: none !important;
+}
+
+/* ensure header still looks good when collapsed on small screens */
+@media (max-width: 600px) {
+  #resultsList.collapsed {
+    bottom: 8px;
+    max-height: 52px;
+    width: calc(100vw - 20px) !important;
+  }
+}

@@ -167,13 +167,24 @@ function addMarkers(data) {
           </div>
         `;
 
+        // create marker without using bindPopup so we control when popups open
         const marker = L.marker(coords).addTo(map);
-        marker.bindPopup(popupContent, {
+
+        // create a popup instance but don't bind it automatically to the marker
+        const popup = L.popup({
           maxWidth: 350,
           className: "custom-popup",
+        }).setContent(popupContent);
+
+        // open popup on marker click unless suppressed by list clicks
+        marker.on("click", function () {
+          if (window._suppressMarkerPopup) return;
+          popup.setLatLng(marker.getLatLng());
+          popup.openOn(map);
         });
 
-        // <-- NOVO: armazenar referência ao item e índice relativo ao array 'data'
+        // store popup and item refs for later use
+        marker._customPopup = popup;
         marker._item = item;
         marker._resultIndex = idx;
 
@@ -346,7 +357,7 @@ function applyFilters() {
   
   if (filtered.length > 0) {
     resultsList.style.display = "block";
-    // render items without inline onclick; use data-index
+    // render items as minimized cards with a hidden .details section that can be toggled
     resultItems.innerHTML = filtered
       .map(
         (item, index) => `
@@ -358,8 +369,24 @@ function applyFilters() {
             display:flex;
             flex-direction:column;
           ">
-            <strong style="color: #333;">🏫 ${item["Nome da escola (ou extensão se for o caso)"] || "Escola"}</strong>
-            <small style="color: #666;">${item.Comunidade || "Comunidade desconhecida"}</small>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <div>
+                <strong style="color: #333;">🏫 ${item["Nome da escola (ou extensão se for o caso)"] || "Escola"}</strong><br>
+                <small style="color: #666;">${item.Comunidade || "Comunidade desconhecida"}</small>
+              </div>
+              <button class="toggle-details" style="border:0;background:transparent;font-size:18px;cursor:pointer;">▾</button>
+            </div>
+
+            <div class="details" style="display:none;margin-top:10px;padding-top:8px;border-top:1px dashed #eee;color:#444;">
+              <div><strong>📍 Comunidade:</strong> ${item.Comunidade || "Não informado"}</div>
+              <div><strong>🏛️ Abrangência:</strong> ${item.Abrangência || "Não informado"} <br> <strong>Nível:</strong> ${item.Nível || "Não informado"}</div>
+              <div><strong>👥 Estudantes:</strong> ${item["Quantidade de estudantes"] || "Não informado"}</div>
+              <div><strong>👨‍🏫 Professores:</strong> ${item["Quantidade de professores efetivos"] || "0"} efetivos, ${item["Quantidade de professores temporários"] || "0"} temporários</div>
+              <div><strong>⏰ Turnos:</strong> ${item["Turnos em que a escola funciona"] || "Não informado"}</div>
+              <div><strong>🚗 Acesso:</strong> ${item["Qual a melhor forma de chegar até a escola?"] || "Não informado"}</div>
+              ${item["Professores formados pela LEdoC trabalhando na escola"] ? `<div><strong>🎓 Professores LEdoC:</strong> ${item["Professores formados pela LEdoC trabalhando na escola"]}</div>` : ""}
+              ${item["Se tiver sugestoes ou comentários, escreva aqui"] ? `<div style="margin-top:6px;color:#856404;"><em>💬 ${item["Se tiver sugestoes ou comentários, escreva aqui"]}</em></div>` : ""}
+            </div>
           </div>
         `
       )
@@ -474,19 +501,36 @@ if (resultItemsContainer) {
   resultItemsContainer.addEventListener("click", function (e) {
     const card = e.target.closest(".result-card");
     if (!card) return;
+
+    // prevent marker popups from opening while handling list click
+    window._suppressMarkerPopup = true;
+    setTimeout(() => {
+      window._suppressMarkerPopup = false;
+    }, 250);
+
+    // If user clicked the expand toggle, just toggle details and do not run selection logic
+    if (e.target.classList.contains("toggle-details") || e.target.closest(".toggle-details")) {
+      const btn = e.target.classList.contains("toggle-details") ? e.target : e.target.closest(".toggle-details");
+      const details = card.querySelector(".details");
+      const isExpanded = details.style.display === "block";
+      details.style.display = isExpanded ? "none" : "block";
+      btn.textContent = isExpanded ? "▾" : "▴";
+      return;
+    }
+
+    // Otherwise handle selection (Shift/Ctrl/Cmd behavior remains)
     const idx = Number(card.dataset.index);
-    // Shift = select range
+    if (isNaN(idx)) return;
+
     if (e.shiftKey && lastClickedIndex !== null) {
       const start = Math.min(lastClickedIndex, idx);
       const end = Math.max(lastClickedIndex, idx);
       for (let i = start; i <= end; i++) selectedIndices.add(i);
     } else if (e.ctrlKey || e.metaKey) {
-      // Ctrl/Cmd = toggle single
       if (selectedIndices.has(idx)) selectedIndices.delete(idx);
       else selectedIndices.add(idx);
       lastClickedIndex = idx;
     } else {
-      // Simple click = single selection
       selectedIndices.clear();
       selectedIndices.add(idx);
       lastClickedIndex = idx;
@@ -499,7 +543,7 @@ if (resultItemsContainer) {
     });
   });
 
-  // double click opens popup and centers map on that school
+  // double click still opens popup and centers map on that school
   resultItemsContainer.addEventListener("dblclick", function (e) {
     const card = e.target.closest(".result-card");
     if (!card) return;
@@ -515,22 +559,28 @@ function getSelectedSchools() {
     .map(i => currentFiltered[i]);
 }
 
-// update showSchoolPopup to use currentFiltered
+// update showSchoolPopup to open the custom popup instance
 function showSchoolPopup(index) {
   const item = currentFiltered[index];
   if (!item) return;
-  
+
   const coords = item[
     "Se possível, insira aqui o link com o localizador da escola, ou as coordenadas de latitude e longitude da escola"
   ]
     .split(",")
     .map((v) => Number(v.trim()));
-  
-  // find first marker matching coords and open popup, also pan there
+
   for (const marker of allMarkers) {
     const ll = marker.getLatLng();
     if (Math.abs(ll.lat - coords[0]) < 1e-6 && Math.abs(ll.lng - coords[1]) < 1e-6) {
-      marker.openPopup();
+      // use custom popup if present
+      if (marker._customPopup) {
+        marker._customPopup.setLatLng(marker.getLatLng());
+        marker._customPopup.openOn(map);
+      } else {
+        // fallback if needed
+        marker.openPopup && marker.openPopup();
+      }
       map.panTo(marker.getLatLng());
       return;
     }

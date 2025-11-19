@@ -502,15 +502,22 @@ if (resultItemsContainer) {
     const card = e.target.closest(".result-card");
     if (!card) return;
 
-    // prevent marker popups from opening while handling list click
-    window._suppressMarkerPopup = true;
-    setTimeout(() => {
-      window._suppressMarkerPopup = false;
-    }, 250);
+    const isToggle =
+      e.target.classList.contains("toggle-details") ||
+      e.target.closest(".toggle-details");
 
-    // If user clicked the expand toggle, just toggle details and do not run selection logic
-    if (e.target.classList.contains("toggle-details") || e.target.closest(".toggle-details")) {
-      const btn = e.target.classList.contains("toggle-details") ? e.target : e.target.closest(".toggle-details");
+    const idx = Number(card.dataset.index);
+    if (isNaN(idx)) return;
+
+    // Decide mobile/touch behavior: single tap should pan to marker (but NOT open popup)
+    const isTouchOrSmall =
+      window.innerWidth <= 600 || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0);
+
+    if (isToggle) {
+      // toggle details only
+      const btn = e.target.classList.contains("toggle-details")
+        ? e.target
+        : e.target.closest(".toggle-details");
       const details = card.querySelector(".details");
       const isExpanded = details.style.display === "block";
       details.style.display = isExpanded ? "none" : "block";
@@ -518,10 +525,37 @@ if (resultItemsContainer) {
       return;
     }
 
-    // Otherwise handle selection (Shift/Ctrl/Cmd behavior remains)
-    const idx = Number(card.dataset.index);
-    if (isNaN(idx)) return;
+    if (isTouchOrSmall) {
+      // single tap on mobile/touch: pan to marker but do NOT open popup
+      goToMarker(idx);
 
+      // expand details visually
+      const details = card.querySelector(".details");
+      const btn = card.querySelector(".toggle-details");
+      if (details && details.style.display !== "block") {
+        details.style.display = "block";
+        if (btn) btn.textContent = "▴";
+      }
+
+      // single-select visually
+      selectedIndices.clear();
+      selectedIndices.add(idx);
+      lastClickedIndex = idx;
+      document.querySelectorAll("#resultItems .result-card").forEach((el) => {
+        const i = Number(el.dataset.index);
+        if (selectedIndices.has(i)) el.classList.add("selected");
+        else el.classList.remove("selected");
+      });
+      return;
+    }
+
+    // Desktop behavior: prevent marker popup from opening due to incidental marker click
+    window._suppressMarkerPopup = true;
+    setTimeout(() => {
+      window._suppressMarkerPopup = false;
+    }, 250);
+
+    // Otherwise handle selection (Shift/Ctrl/Cmd behavior remains)
     if (e.shiftKey && lastClickedIndex !== null) {
       const start = Math.min(lastClickedIndex, idx);
       const end = Math.max(lastClickedIndex, idx);
@@ -536,20 +570,64 @@ if (resultItemsContainer) {
       lastClickedIndex = idx;
     }
     // update visual states
-    document.querySelectorAll("#resultItems .result-card").forEach(el => {
+    document.querySelectorAll("#resultItems .result-card").forEach((el) => {
       const i = Number(el.dataset.index);
       if (selectedIndices.has(i)) el.classList.add("selected");
       else el.classList.remove("selected");
     });
   });
 
-  // double click still opens popup and centers map on that school
+  // dblclick still opens popup and centers map (keeps previous behavior)
   resultItemsContainer.addEventListener("dblclick", function (e) {
     const card = e.target.closest(".result-card");
     if (!card) return;
     const idx = Number(card.dataset.index);
     showSchoolPopup(idx);
   });
+}
+
+// minimize / expand results list
+const minimizeBtn = document.getElementById("minimizeResultsBtn");
+const resultsListEl = document.getElementById("resultsList");
+const resultsHeader = document.getElementById("resultsHeader");
+const resultItemsEl = document.getElementById("resultItems");
+if (minimizeBtn && resultsListEl && resultItemsEl) {
+  minimizeBtn.addEventListener("click", function () {
+    const isExpanded = minimizeBtn.getAttribute("aria-expanded") === "true";
+    if (isExpanded) {
+      // minimize
+      resultsListEl.classList.add("collapsed");
+      resultItemsEl.style.display = "none";
+      minimizeBtn.textContent = "+";
+      minimizeBtn.setAttribute("aria-expanded", "false");
+    } else {
+      // expand
+      resultsListEl.classList.remove("collapsed");
+      resultItemsEl.style.display = "block";
+      minimizeBtn.textContent = "−";
+      minimizeBtn.setAttribute("aria-expanded", "true");
+    }
+  });
+
+  // also toggle when header is tapped (except when clicking inside items)
+  resultsHeader.addEventListener("click", function (e) {
+    if (e.target === minimizeBtn) return;
+    minimizeBtn.click();
+  });
+}
+
+// helper: pan/center to a marker without opening its popup
+function goToMarker(index) {
+  for (const marker of allMarkers) {
+    if (marker._resultIndex === index) {
+      const latlng = marker.getLatLng();
+      // Pan (do not open popup). Optionally adjust zoom level if too far out:
+      // if (map.getZoom() < 12) map.setView(latlng, 12, { animate: true });
+      map.panTo(latlng, { animate: true });
+      return marker;
+    }
+  }
+  return null;
 }
 
 // helper to get selected data objects
@@ -704,3 +782,20 @@ function populateResultsList(list) {
 window.getSelectedSchools = function() {
   return Array.from(selectedIndices).sort((a,b)=>a-b).map(i => currentFiltered[i]);
 };
+
+const applyBtn = document.getElementById("applyFilters");
+if (applyBtn) {
+  applyBtn.addEventListener("click", function () {
+    // keep existing behavior (applyFilters is already wired elsewhere)
+    // On small screens, minimize the filter box so the map/results are visible
+    if (window.innerWidth <= 600) {
+      const filterContent = document.getElementById("filterContent");
+      const minimizeBtn = document.getElementById("minimizeBtn");
+      const filterBox = document.getElementById("filterBox");
+
+      if (filterContent) filterContent.style.display = "none";
+      if (minimizeBtn) minimizeBtn.textContent = "+";
+      if (filterBox) filterBox.classList.add("collapsed-filter");
+    }
+  });
+}

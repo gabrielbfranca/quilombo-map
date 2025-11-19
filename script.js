@@ -167,13 +167,24 @@ function addMarkers(data) {
           </div>
         `;
 
+        // create marker without using bindPopup so we control when popups open
         const marker = L.marker(coords).addTo(map);
-        marker.bindPopup(popupContent, {
+
+        // create a popup instance but don't bind it automatically to the marker
+        const popup = L.popup({
           maxWidth: 350,
           className: "custom-popup",
+        }).setContent(popupContent);
+
+        // open popup on marker click unless suppressed by list clicks
+        marker.on("click", function () {
+          if (window._suppressMarkerPopup) return;
+          popup.setLatLng(marker.getLatLng());
+          popup.openOn(map);
         });
 
-        // <-- NOVO: armazenar referência ao item e índice relativo ao array 'data'
+        // store popup and item refs for later use
+        marker._customPopup = popup;
         marker._item = item;
         marker._resultIndex = idx;
 
@@ -491,6 +502,12 @@ if (resultItemsContainer) {
     const card = e.target.closest(".result-card");
     if (!card) return;
 
+    // prevent marker popups from opening while handling list click
+    window._suppressMarkerPopup = true;
+    setTimeout(() => {
+      window._suppressMarkerPopup = false;
+    }, 250);
+
     // If user clicked the expand toggle, just toggle details and do not run selection logic
     if (e.target.classList.contains("toggle-details") || e.target.closest(".toggle-details")) {
       const btn = e.target.classList.contains("toggle-details") ? e.target : e.target.closest(".toggle-details");
@@ -542,22 +559,28 @@ function getSelectedSchools() {
     .map(i => currentFiltered[i]);
 }
 
-// update showSchoolPopup to use currentFiltered
+// update showSchoolPopup to open the custom popup instance
 function showSchoolPopup(index) {
   const item = currentFiltered[index];
   if (!item) return;
-  
+
   const coords = item[
     "Se possível, insira aqui o link com o localizador da escola, ou as coordenadas de latitude e longitude da escola"
   ]
     .split(",")
     .map((v) => Number(v.trim()));
-  
-  // find first marker matching coords and open popup, also pan there
+
   for (const marker of allMarkers) {
     const ll = marker.getLatLng();
     if (Math.abs(ll.lat - coords[0]) < 1e-6 && Math.abs(ll.lng - coords[1]) < 1e-6) {
-      marker.openPopup();
+      // use custom popup if present
+      if (marker._customPopup) {
+        marker._customPopup.setLatLng(marker.getLatLng());
+        marker._customPopup.openOn(map);
+      } else {
+        // fallback if needed
+        marker.openPopup && marker.openPopup();
+      }
       map.panTo(marker.getLatLng());
       return;
     }

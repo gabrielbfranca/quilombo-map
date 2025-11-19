@@ -782,3 +782,20 @@ function populateResultsList(list) {
 window.getSelectedSchools = function() {
   return Array.from(selectedIndices).sort((a,b)=>a-b).map(i => currentFiltered[i]);
 };
+
+const applyBtn = document.getElementById("applyFilters");
+if (applyBtn) {
+  applyBtn.addEventListener("click", function () {
+    // keep existing behavior (applyFilters is already wired elsewhere)
+    // On small screens, minimize the filter box so the map/results are visible
+    if (window.innerWidth <= 600) {
+      const filterContent = document.getElementById("filterContent");
+      const minimizeBtn = document.getElementById("minimizeBtn");
+      const filterBox = document.getElementById("filterBox");
+
+      if (filterContent) filterContent.style.display = "none";
+      if (minimizeBtn) minimizeBtn.textContent = "+";
+      if (filterBox) filterBox.classList.add("collapsed-filter");
+    }
+  });
+}

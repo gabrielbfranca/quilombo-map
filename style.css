@@ -163,3 +163,43 @@ body {
     z-index: 1200;
   }
 }
+
+/* Fix right-side overflow on small screens */
+@media (max-width: 600px) {
+  html, body {
+    overflow-x: hidden;
+  }
+
+  #filterBox,
+  #resultsList {
+    box-sizing: border-box;
+    left: 10px !important;
+    right: 10px !important;
+    width: auto !important;
+    max-width: calc(100vw - 20px) !important;
+  }
+
+  /* Prevent children from exceeding container width */
+  #filterBox *,
+  #resultsList * {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    word-wrap: break-word !important;
+  }
+
+  /* Make inputs, buttons and suggestion boxes fit inside the container */
+  #filterBox input[type="text"],
+  #filterBox button,
+  #escola-suggestions,
+  #comunidade-suggestions {
+    width: calc(100% - 20px) !important;
+    left: 10px !important;
+    right: 10px !important;
+  }
+
+  /* Guard result cards from forcing horizontal scroll */
+  #resultItems .result-card {
+    min-width: 0 !important;
+    overflow-wrap: anywhere;
+  }
+}
